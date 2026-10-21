@@ -1,0 +1,38 @@
+{
+  "name": "english-word-reciter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "英语猜词背诵器 · 猜词义 / 拼单词 + 词根学习（桌面窗口版 / 单文件 exe）",
+  "main": "app/electron-main.js",
+  "bin": "app/server.js",
+  "scripts": {
+    "start": "node app/server.js",
+    "app": "electron .",
+    "seed": "node tools/prepare-seed.js",
+    "icon": "node tools/make-icon.js",
+    "launcher": "node tools/build-launcher.js",
+    "update-pack": "node tools/make-update-pack.js",
+    "pack": "node tools/prepare-seed.js && pkg . --targets node18-win-x64 --output dist/word-reciter.exe",
+    "dist": "node tools/prepare-seed.js && electron-packager . 英语猜词背诵器 --platform=win32 --arch=x64 --out=dist-app --overwrite --icon=assets/icon/word-reciter-pkg.ico --ignore=\"^/data($|/)\" --ignore=\"^/dist($|/)\" --ignore=\"^/dist-app($|/)\" --ignore=\"^/docs($|/)\" --ignore=\"^/tools($|/)\" --ignore=\"^/assets($|/)\" --ignore=\"^/_tmp\" --ignore=\"^/start.bat\" --ignore=\"^/package-lock.json\"",
+    "build": "npm run dist && npm run launcher"
+  },
+  "pkg": {
+    "assets": [
+      "app/web/**/*",
+      "app/seed/**/*"
+    ],
+    "targets": [
+      "node18-win-x64"
+    ]
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.3.6",
+    "electron": "^44.4.3",
+    "pkg": "5.8.1",
+    "png-to-ico": "^3.0.1",
+    "rcedit": "^5.0.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

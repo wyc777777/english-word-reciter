@@ -1,0 +1,55 @@
+# ==================== 依赖 ====================
+node_modules/
+.pnp
+.pnp.js
+
+# ==================== 打包产物 ====================
+# electron-packager 输出的应用。
+dist-app/
+# pkg 输出的单文件 exe。
+dist/
+# 增量更新包。
+dist-update/
+# 根目录的启动器 + 打包 exe。
+*.exe
+*.dll
+*.pak
+*.asar
+*.dat
+*.bin
+
+# ==================== 构建中间产物 ====================
+# 由 npm run seed（tools/prepare-seed.js）从 data/ 复制生成，不必入库。
+app/seed/
+
+# ==================== 本机私有数据（重要） ====================
+# 含明文 API Key，绝不能提交。
+data/api_config.json
+# 个人学习进度与存档。
+data/progress.json
+data/saves.json
+# 运行时日志。
+data/logs/
+*.log
+
+# ==================== 临时目录 ====================
+_tmp/
+tmp/
+temp/
+.playwright-cli/
+.cache/
+
+# ==================== 编辑器 / 系统 / 本地工具数据 ====================
+.vscode/
+.idea/
+.workbuddy/
+.codebuddy/
+.cursor/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==================== 环境变量 ====================
+.env
+.env.*
+!.env.example

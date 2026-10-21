@@ -1,0 +1,14 @@
+{
+  "name": "word-guess-reciter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "英语猜词背诵器 · 猜词义 / 猜拼写 + 词根学习（本地 AI 代理版）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build-books": "node tools/build-books.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

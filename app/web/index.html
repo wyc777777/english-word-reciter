@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>英语猜词背诵器</title>
+<link rel="icon" href="favicon.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">词</span>
+    <div>
+      <h1>英语猜词背诵器</h1>
+      <p id="brand-sub">词根 + 猜词 + AI 判定，把背单词变成游戏</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span id="ai-state" class="ai-state">检查 AI 配置…</span>
+    <button id="btn-settings-quick" class="ghost">设置</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-view="practice">练习</button>
+  <button class="tab" data-view="books">词库</button>
+  <button class="tab" data-view="starred">生词本</button>
+  <button class="tab" data-view="today">今日</button>
+  <button class="tab" data-view="graduated">牢记</button>
+  <button class="tab" data-view="roots">词根本</button>
+  <button class="tab" data-view="stats">统计</button>
+  <button class="tab" data-view="settings">设置</button>
+</nav>
+
+<main>
+
+  <!-- ============ 练习 ============ -->
+  <section id="view-practice" class="view active">
+    <div class="practice-head">
+      <div class="mode-switch">
+        <button class="mode-btn active" data-mode="meaning">猜词义</button>
+        <button class="mode-btn" data-mode="spell">拼单词</button>
+      </div>
+      <div class="head-right">
+        <label class="mini-field">词库
+          <select id="book-select"></select>
+        </label>
+        <button id="btn-shuffle" class="ghost small">换一批</button>
+      </div>
+    </div>
+
+    <div class="progress-strip">
+      <div class="ps-item"><span id="ps-new">0</span><small>今日新词</small></div>
+      <div class="ps-item"><span id="ps-review">0</span><small>今日复习</small></div>
+      <div class="ps-item"><span id="ps-due">0</span><small>待复习</small></div>
+      <div class="ps-item"><span id="ps-mastered">0</span><small>已掌握</small></div>
+      <div class="ps-bar"><i id="ps-bar-fill"></i></div>
+      <div class="ps-stage" id="ps-stage"></div>
+      <div class="ps-backlog hidden" id="ps-backlog"></div>
+    </div>
+
+    <div class="card word-card">
+      <div class="wc-top">
+        <span class="chip" id="wc-index">第 1 个</span>
+        <span class="chip" id="wc-tag">新词</span>
+        <div class="wc-actions">
+          <button id="btn-know-it" class="ghost small">已经很懂了</button>
+          <button id="btn-ai-roots" class="ghost small" title="觉得词根拆得不对？让 AI 重新拆，结果会替换并保存">AI 重拆词根</button>
+          <button id="btn-toggle-roots" class="ghost small">显示词根</button>
+          <button id="btn-speak" class="ghost small">发音</button>
+        </div>
+      </div>
+
+      <div class="word-main">
+        <div class="word-big" id="wc-word">—</div>
+        <div class="word-ph" id="wc-ph"></div>
+      </div>
+
+      <div class="roots-row hidden" id="wc-roots"></div>
+      <div class="sent-row hidden" id="wc-eg"></div>
+
+      <div class="root-query" id="root-query">
+        <span class="rq-label">片段不懂？</span>
+        <input id="root-piece-input" type="text" autocomplete="off" spellcheck="false" placeholder="输入没看懂的字母片段，如 ree / uch">
+        <button id="btn-root-piece" class="ghost small" title="只问这个片段本身的通用含义">直接问含义</button>
+        <button id="btn-root-piece-word" class="ghost small" title="结合当前这个单词，问它在这里起什么作用">结合本词问</button>
+      </div>
+      <div class="root-piece-result hidden" id="root-piece-result"></div>
+
+      <div class="prompt-line hidden" id="wc-prompt"></div>
+    </div>
+
+    <div class="card input-card">
+      <div class="input-row">
+        <input id="answer" type="text" autocomplete="off" spellcheck="false" placeholder="输入中文意思…">
+        <button id="btn-submit" class="primary" title="交给 AI 判定（回车）">AI 提交</button>
+        <button id="btn-submit-local" class="ghost" title="本地机械判定，不花 token（Ctrl+Enter）">机械提交</button>
+      </div>
+      <div class="input-foot">
+        <span id="input-hint">说出这个词的意思，AI 会判断你猜得有多准（回车提交）</span>
+        <span class="spacer"></span>
+        <button id="btn-hint" class="link">要提示</button>
+        <button id="btn-eg" class="link">看例句</button>
+        <button id="btn-giveup" class="link danger">看答案</button>
+        <button id="btn-skip" class="link">跳过</button>
+      </div>
+    </div>
+
+    <div class="card result-card hidden" id="result-card">
+      <div class="score-row" id="score-row">
+        <div class="score-num"><b id="rs-score">0</b><small>相似度</small></div>
+        <div class="score-body">
+          <div class="score-bar"><i id="rs-bar"></i></div>
+          <div class="score-verdict" id="rs-verdict"></div>
+          <div class="score-comment" id="rs-comment"></div>
+        </div>
+      </div>
+      <div class="tile-row hidden" id="spell-tiles"></div>
+      <div class="spell-result hidden" id="spell-result">
+        <div class="score-verdict" id="sp-verdict"></div>
+        <div class="score-comment" id="sp-comment"></div>
+      </div>
+      <div class="ai-hint hidden" id="rs-hint"></div>
+    </div>
+
+    <div class="card history-card hidden" id="history-card">
+      <h3>猜过的答案<span class="sub">按接近度排序</span></h3>
+      <ul id="history-list"></ul>
+    </div>
+
+    <div class="empty-state hidden" id="practice-empty">
+      <p>今天的词都背完啦 🎉</p>
+      <button id="btn-extra" class="primary">再来 10 个</button>
+    </div>
+  </section>
+
+  <!-- ============ 词库 ============ -->
+  <section id="view-books" class="view">
+    <div class="card">
+      <div class="row-between">
+        <h3>选择单词书</h3>
+        <span class="sub" id="books-meta"></span>
+      </div>
+      <div class="book-grid" id="book-grid"></div>
+    </div>
+
+    <div class="card">
+      <div class="row-between">
+        <h3>单词列表</h3>
+        <div class="search-box">
+          <input id="word-search" type="text" placeholder="搜索单词或中文释义…">
+          <select id="word-filter">
+            <option value="all">全部</option>
+            <option value="new">未学</option>
+            <option value="learning">学习中</option>
+            <option value="mastered">已掌握</option>
+            <option value="due">待复习</option>
+            <option value="star">★ 生词本</option>
+          </select>
+        </div>
+      </div>
+      <div class="word-list" id="word-list"></div>
+      <div class="list-foot">
+        <button id="btn-load-more" class="ghost">加载更多</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 生词本 ============ -->
+  <section id="view-starred" class="view">
+    <div class="card">
+      <div class="row-between">
+        <h3>生词本<span class="sub">练习时点卡片右上角 ☆ 收藏，这里点单词直接看卡片</span></h3>
+        <span class="sub" id="starred-meta"></span>
+      </div>
+      <div class="word-list" id="starred-list"></div>
+    </div>
+  </section>
+
+  <!-- ============ 今日 ============ -->
+  <section id="view-today" class="view">
+    <div class="practice-head">
+      <div class="mode-switch" id="today-mode-switch">
+        <button class="today-tab active" data-tmode="meaning">猜词义</button>
+        <button class="today-tab" data-tmode="spell">拼单词</button>
+      </div>
+      <div class="head-right">
+        <span class="sub" id="today-mode-tip"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row-between">
+        <h3>今天遇见的单词<span class="sub">练习里出现过的词，点开看卡片</span></h3>
+        <span class="sub" id="today-seen-meta"></span>
+      </div>
+      <div class="word-list" id="today-seen-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="row-between">
+        <h3>待复习<span class="sub">已到期、该再过一遍的词</span></h3>
+        <span class="sub" id="today-due-meta"></span>
+      </div>
+      <div class="word-list" id="today-due-list"></div>
+    </div>
+  </section>
+
+  <!-- ============ 牢记 ============ -->
+  <section id="view-graduated" class="view">
+    <div class="card">
+      <div class="row-between">
+        <h3>已牢记<span class="sub">标过「牢记」的词，不会再进队列；点开可查看或取消</span></h3>
+        <span class="sub" id="grad-meta"></span>
+      </div>
+      <div class="word-list" id="grad-list"></div>
+    </div>
+  </section>
+
+  <!-- ============ 词根本 ============ -->
+  <section id="view-roots" class="view">
+    <div class="card">
+      <div class="row-between">
+        <h3>词根本<span class="sub">点击词根查看同源词</span></h3>
+        <div class="search-box">
+          <input id="root-search" type="text" placeholder="搜索词根，如 spect / port / 看">
+          <select id="root-type">
+            <option value="all">全部</option>
+            <option value="p">前缀</option>
+            <option value="r">词根</option>
+            <option value="s">后缀</option>
+          </select>
+        </div>
+      </div>
+      <div class="root-grid scroll" id="root-grid"></div>
+      <div class="list-foot"><button id="btn-root-more" class="ghost">加载更多</button></div>
+    </div>
+
+    <div class="card">
+      <div class="row-between">
+        <h3>查过的片段<span class="sub">AI 解答过的片段会存下来，下次直接看；导出/导入只含"跟随单词"的知识数据，不含你的学习进度</span></h3>
+        <div class="wc-actions">
+          <input id="piece-search" class="mini-search" type="text" placeholder="搜片段 / 含义">
+          <span class="sub" id="piece-count"></span>
+          <button id="btn-piece-export" class="ghost small">导出</button>
+          <button id="btn-piece-import" class="ghost small">导入</button>
+          <input id="piece-import-file" type="file" accept="application/json,.json" class="hidden">
+        </div>
+      </div>
+      <div class="root-grid scroll" id="piece-grid"></div>
+    </div>
+
+    <div class="card">
+      <div class="row-between">
+        <h3>AI 拆过的单词<span class="sub">点过「AI 重拆词根」的词都存这儿、跟单词绑定；里面新出现的词根也会被收进词根库</span></h3>
+        <div class="wc-actions">
+          <input id="explode-search" class="mini-search" type="text" placeholder="搜单词 / 词根">
+          <span class="sub" id="explode-count"></span>
+        </div>
+      </div>
+      <div class="root-grid scroll" id="explode-grid"></div>
+    </div>
+
+    <div class="card hidden" id="root-detail">
+      <div class="row-between">
+        <h3 id="rd-title"></h3>
+        <button id="btn-root-close" class="link">收起</button>
+      </div>
+      <div class="root-detail-body" id="rd-body"></div>
+    </div>
+  </section>
+
+  <!-- ============ 统计 ============ -->
+  <section id="view-stats" class="view">
+    <div class="card">
+      <div class="row-between">
+        <h3>统计范围</h3>
+        <div class="mode-switch" id="stats-mode-switch">
+          <button class="mode-btn" data-smode="meaning">猜词义</button>
+          <button class="mode-btn" data-smode="spell">拼单词</button>
+        </div>
+      </div>
+      <p class="tip" id="stats-scope-tip"></p>
+    </div>
+    <div class="stat-grid" id="stat-grid"></div>
+    <div class="card">
+      <h3>掌握进度</h3>
+      <div class="mastery-bar">
+        <i class="m-mastered" id="m-mastered"></i>
+        <i class="m-learning" id="m-learning"></i>
+      </div>
+      <div class="legend">
+        <span><i class="dot m-mastered"></i>已掌握 <b id="lg-mastered">0</b></span>
+        <span><i class="dot m-learning"></i>学习中 <b id="lg-learning">0</b></span>
+        <span><i class="dot m-new"></i>未学 <b id="lg-new">0</b></span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row-between">
+        <h3>最近 14 天</h3>
+        <span class="sub" id="day-chart-sub">每日练习量</span>
+      </div>
+      <div class="day-chart" id="day-chart"></div>
+    </div>
+    <div class="card">
+      <div class="row-between">
+        <h3>存档</h3>
+        <span class="sub">3 个槽位，每份存完整进度（两个系统 + 生词本 + 复习计划）</span>
+      </div>
+      <div class="save-slots" id="save-slots"></div>
+    </div>
+
+    <div class="card">
+      <div class="row-between">
+        <h3>数据管理</h3>
+      </div>
+      <div class="row gap">
+        <button id="btn-export" class="ghost">导出进度</button>
+        <button id="btn-import" class="ghost">导入进度</button>
+        <button id="btn-reset-book" class="ghost danger">重置本词库进度</button>
+      </div>
+      <input type="file" id="import-file" accept=".json" hidden>
+    </div>
+  </section>
+
+  <!-- ============ 设置 ============ -->
+  <section id="view-settings" class="view">
+    <div class="card">
+      <h3>AI 接口配置<span class="sub">密钥只保存在本机 assets/api_config.json，不会上传给任何第三方</span></h3>
+      <div class="profile-row">
+        <label class="field">配置
+          <select id="cfg-profiles"></select>
+        </label>
+        <button id="btn-cfg-new" class="ghost small">新建</button>
+        <button id="btn-cfg-del" class="ghost small danger">删除</button>
+      </div>
+      <div class="row gap hidden" id="cfg-new-row">
+        <input id="cfg-new-name" type="text" placeholder="新配置的名字，例如 DeepSeek / 通义千问">
+        <button id="btn-cfg-new-ok" class="primary small">创建</button>
+        <button id="btn-cfg-new-cancel" class="ghost small">取消</button>
+      </div>
+      <label class="field">接口地址（Base URL）
+        <input id="cfg-base" type="text" placeholder="https://api.deepseek.com/v1">
+      </label>
+      <label class="field">模型名称
+        <input id="cfg-model" type="text" placeholder="deepseek-chat">
+      </label>
+      <label class="field">API Key
+        <input id="cfg-key" type="password" placeholder="sk-…">
+      </label>
+      <div class="row gap">
+        <button id="btn-cfg-save" class="primary">保存</button>
+        <button id="btn-cfg-test" class="ghost">测试连接</button>
+      </div>
+      <p class="tip" id="cfg-tip">支持任何 OpenAI 兼容接口：DeepSeek、豆包/火山方舟、通义千问、Kimi、智谱、OpenAI、本地 Ollama 等。没配 Key 也能玩，此时相似度用本地算法估算。</p>
+    </div>
+
+    <div class="card">
+      <h3>学习设置</h3>
+      <p class="tip">猜词义和拼单词是两套独立的系统：各有自己的词库、进度和今日队列，互不干扰。</p>
+      <label class="field">「猜词义」用的词库
+        <select id="set-book-meaning"></select>
+      </label>
+      <label class="field">「拼单词」用的词库
+        <select id="set-book-spell"></select>
+      </label>
+      <label class="field">「猜词义」每日新词量
+        <input id="set-daily" type="number" min="5" max="100" step="5">
+      </label>
+      <label class="check"><input id="set-spell-enabled" type="checkbox"> 开启「拼单词」练习<span class="sub">默认关闭；开启后每天才会有拼单词的题</span></label>
+      <label class="field">「拼单词」每日新词量
+        <input id="set-spell-daily" type="number" min="5" max="100" step="5">
+      </label>
+      <label class="field">练习时默认显示词根
+        <select id="set-roots">
+          <option value="always">总是显示</option>
+          <option value="button">点击按钮显示</option>
+          <option value="never">不显示</option>
+        </select>
+      </label>
+      <label class="check"><input id="set-speak" type="checkbox"> 显示单词时自动发音</label>
+      <label class="check"><input id="set-roots-auto" type="checkbox"> 本地词根库拆不出时，用 AI 自动补全拆解</label>
+      <button id="btn-set-save" class="primary">保存学习设置</button>
+    </div>
+
+    <div class="card">
+      <h3>玩法说明</h3>
+      <ul class="help">
+        <li><b>猜词义</b>：给出单词和词根拆解，你输入中文意思，AI 判定语义接近度（0-100）。≥85 分视为答对，否则会给你「有多相近」和进一步提示，可反复猜。</li>
+        <li><b>拼单词</b>：给出中文释义和词根提示，你拼出单词。错误时会给出字母级反馈（绿=位置对、黄=字母有但位置错），并由 AI 指出错在哪个词根。</li>
+        <li>答对后会弹出一张<b>单词卡</b>：释义、例句（词库没有会自动让 AI 补）、词根、同根词、搭配。右上角 ☆ 收藏进生词本。</li>
+        <li>卡片底下三个按钮决定它什么时候再出现：<b>不熟</b>（明天复习）· <b>不太熟</b>（3 天后复习）· <b>牢记</b>（毕业，不再出现）。复习按「天」算，过了当晚 0 点就进复习队列。</li>
+        <li>提交有两种：<b>AI 提交</b>把你的答案交给 AI 判定（准，花 token）；<b>机械提交</b>不联网，按「命中释义关键词 或 字符重合度 ≥75%」判定（免费，适合粗筛）。回车 = AI 提交，Ctrl+Enter = 机械提交。</li>
+        <li>词根行下面的「片段不懂？」有两个按钮：<b>直接问含义</b>问的是这个片段本身的通用意思；<b>结合本词问</b>问的是它在这个单词里起什么作用（输入框里 Shift+回车 同效）。</li>
+        <li>觉得词根拆得不对？点卡片顶部的 <b>AI 重拆词根</b>，AI 的结果会替换当前显示并保存下来，以后这个词都用它。</li>
+        <li>猜词义时想不起来，可以点「<b>看例句</b>」：先只给英文例句，再点一次并确认后才显示中文翻译（中文等于答案，所以留了道确认）。</li>
+        <li>「统计」页有 <b>3 个存档槽位</b>，可以随时把进度存档 / 读档。</li>
+        <li>词根本页面收录了 300+ 常见词根词缀，可反查同源词。</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ 单词详情卡（答对 / 看答案后弹出） ============ -->
+<div class="modal hidden" id="word-modal">
+  <div class="modal-mask" id="wm-mask"></div>
+  <div class="modal-card">
+    <button class="wm-close hidden" id="wm-close" title="关闭">✕</button>
+    <button class="star-btn" id="wm-star" title="收藏进生词本">☆</button>
+
+    <div class="wm-head">
+      <div class="wm-word" id="wm-word"></div>
+      <div class="wm-ph" id="wm-ph"></div>
+      <div class="wm-head-actions">
+        <button id="wm-speak" class="ghost small">发音</button>
+        <button id="wm-explain" class="ghost small">AI 讲解</button>
+        <button id="wm-ai-roots" class="ghost small">AI 拆词根</button>
+      </div>
+    </div>
+
+    <div class="wm-roots" id="wm-roots"></div>
+    <div class="wm-meaning" id="wm-meaning"></div>
+    <div class="wm-sec" id="wm-sentences"></div>
+    <div class="wm-sec" id="wm-extra"></div>
+    <div class="wm-ai hidden" id="wm-ai"></div>
+
+    <div class="wm-actions" id="wm-rating">
+      <button class="wm-btn act-again" data-act="again"><b>不熟</b><small>明天复习</small></button>
+      <button class="wm-btn act-tomorrow" data-act="tomorrow"><b>不太熟</b><small>3 天后复习</small></button>
+      <button class="wm-btn act-know" data-act="know"><b>牢记</b><small>不再出现</small></button>
+    </div>
+    <div class="wm-tip" id="wm-tip">右上角 ☆ 收藏进生词本 · 选一个决定它什么时候再出现</div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="js/roots.js"></script>
+<script src="js/api.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/practice.js"></script>
+<script src="js/books.js"></script>
+<script src="js/starredview.js"></script>
+<script src="js/todayview.js"></script>
+<script src="js/graduatedview.js"></script>
+<script src="js/rootsview.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
